@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -7,7 +9,9 @@ import 'package:whales_technology/utils/urls.dart';
 class HomeLogic extends GetxController {
   TextEditingController textEditingController = TextEditingController();
   var userName = ''.obs;
-  var searchResult = GitHubUser(
+  var userNotFound = false.obs;
+  var isLoading = false.obs;
+  var searchResult = GithubUser(
     avatarUrl: '',
     bio: '',
     blog: '',
@@ -52,19 +56,28 @@ class HomeLogic extends GetxController {
 
   @override
   void onInit() {
+    textEditingController.text = '';
     super.onInit();
   }
 
   void searchUser() async {
+    isLoading.value = true;
     try {
       var response =
-          await dio.get(Urls.searchUser + textEditingController.text);
-
+          await dio.get('${Urls.searchUser}${textEditingController.text}');
+      debugPrint('response: ${response.data}');
       if (response.statusCode == 200) {
-        searchResult.value = GitHubUser.fromJson(response.data);
+        searchResult.value = GithubUser.fromJson(response.data);
+      } else {
+        userNotFound.value = true;
+        textEditingController.text = 'No result';
+        isLoading.value = false;
+        throw Exception('Failed to load user');
       }
     } catch (e) {
-      printError(info: '$e');
+      throw Exception('Failed to load user');
+    } finally {
+      isLoading.value = false;
     }
   }
 }
